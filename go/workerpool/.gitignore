@@ -1,0 +1,5 @@
+# Go benchmark profiles
+cpu.out
+mem.out
+# ExampleMain() test
+example.test
