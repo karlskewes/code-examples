@@ -14,6 +14,15 @@ to use concurrency. The solution required fanning out, performing multiple reque
 
 This resulted in code shaped like the example here.
 
+On reflection, in most cases it might be better to do something like [errgroup#Pipeline example](https://pkg.go.dev/golang.org/x/sync/errgroup#example-Group-Pipeline) because:
+1. handles returning the first error via `err := eg.Wait()`
+1. on error, the context is canceled, notifying workers (and feeder)
+1. if only range over the jobs channel, on channel close any final actions can be after the `for range` block
+1. if the input count is unknown will need to range over an input channel anyway and wait for its closure.
+1. if the output count is unknown or the input is filtered then need to finish aggregation on channel close.
+
+See: [./errgroup.go](./errgroup.go)
+
 # Getting Started
 
 Run:
@@ -74,7 +83,7 @@ go tool pprof -http localhost:6060 cpu.out
 
 1. `manager` starts `n` `workers`
 2. `workers` listen indefinitely on `jobs` channel
-3. `manager` feeds `workers` by sending `input` to be processed on `jobs` channel
+3. `manager/feeder` feeds `workers` by sending `input` to be processed on `jobs` channel
 4. `workers` receive on `jobs` channel and process task
 5. `workers` send each job `result` back to manager on `results` channel
 6. `manager` receives on `jobs` channel and aggregates `results` into a map
